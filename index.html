@@ -1,0 +1,139 @@
+<!doctype html>
+<head>
+  <title>Connect 4 game</title>
+<style>
+#board td {
+  width: 30px;
+  height: 30px;
+  border: solid 1px #666;
+}
+.circle {
+  margin: 5px;
+  width: 80%;
+  height: 80%;
+  border-radius: 50%;
+}
+#column-top td {
+  border: solid 1px yellow;
+}
+#column-top td:hover {
+  background-color: gold;
+}
+#game{
+  border: 2px solid blueviolet;
+}
+#board{
+  border: 2px solid cyan;
+}
+</style>
+</head>
+<body>
+  <h3>Connect 4 Game</h3>
+  <h6>Rules:Player1 & 2 take turns clicking,a circle will drop down to the lowest available space.A win if a player can get a line of 4 same color either horizontally,vertically,or diagonally.Tie if board fills</h6>
+  <input id="p1Color" placeholder="Enter Player1 color">
+  <input id="p2Color" placeholder="Enter Player2 color">
+  <button id="startGame">Start Game</button>
+  <div id="game">
+    <table id="board"></table>
+  </div>
+<script>
+ class Game{
+  constructor(p1,p2,height=6,width=7){
+    this.players = [p1, p2]
+    this.height = height
+    this.width = width
+    this.currPlayer = p1
+    this.makeBoard()
+    this.makeHtmlBoard()
+    this.gameOver = false
+  }
+  makeBoard(){
+    this.board = []
+    for (let i = 0; i < this.height; i++) {
+      this.board.push(Array.from({ length: this.width }))
+    }//[[.......],[],[],[],[],[]]  6x7
+  }
+  makeHtmlBoard(){
+    const board = document.getElementById('board')
+    board.innerHTML = ''
+    const top = document.createElement('tr')
+    top.setAttribute('id','column-top')
+    // store a reference to the handleClick bound function 
+    // so that we can remove the event listener correctly later
+    this.handleGameClick = this.handleClick.bind(this)
+    top.addEventListener("click", this.handleGameClick)
+    for (let x = 0; x < this.width; x++) {
+      const headCell = document.createElement('td')
+      headCell.setAttribute('id', x)
+      top.append(headCell)
+    }
+    board.append(top)
+    for (let y = 0; y < this.height; y++) {
+      const row = document.createElement('tr')
+      for (let x = 0; x < this.width; x++) {
+        const cell = document.createElement('td')
+        cell.setAttribute('id', `${y}-${x}`)
+        row.append(cell)
+      }
+      board.append(row)
+    }
+  }
+  handleClick(evt) {//handle click of column top
+    const Y = +evt.target.id// get ID of clicked cell (0 to 6)
+    const X = this.findSpotForCol(Y)
+    if (X === null) return//if none, ignore click
+    this.board[X][Y] = this.currPlayer// place circle in board and add to HTML table
+    this.placeInTable(X, Y)
+    if (this.board.every(row => row.every(col => col)))return this.endGame('TIE')
+    if (this.checkForWin()) {
+      this.gameOver = true
+      return this.endGame(`${this.currPlayer.color} WON`)
+    }
+    this.currPlayer = this.currPlayer === this.players[0] ? this.players[1]// switch players
+                                                          : this.players[0]
+  }
+  findSpotForCol(Y){//given column Y, return top empty X (null if filled)
+    for (let X=this.height-1;X>=0;X--) if(!this.board[X][Y]) return X
+    return null
+  }
+  placeInTable(X,Y){//update DOM to place circle into HTML board
+    const circle = document.createElement('div')
+    circle.classList.add('circle')
+    circle.style.backgroundColor = this.currPlayer.color
+    circle.style.top = -50 * (X + 2)
+    document.getElementById(`${X}-${Y}`).append(circle)
+  }
+  endGame(msg){
+    alert(msg)
+    document.querySelector("#column-top").removeEventListener("click",this.handleGameClick)
+  }
+  checkForWin(){
+    const F = cells=>cells.every(([X,Y])=>X>=0&&
+                                          Y>=0&&
+                                          X<this.height&&
+                                          Y<this.width&&
+                                          this.board[X][Y]===this.currPlayer)
+    for(let X=0;X<this.height;X++){
+      for(let Y=0;Y<this.width;Y++){
+        const horiz = [[X,Y],[X,Y+1],[X,Y+2],[X,Y+3]]
+        const vert  = [[X,Y],[X+1,Y],[X+2,Y],[X+3,Y]]
+        const diagDR= [[X,Y],[X+1,Y+1],[X+2,Y+2],[X+3,Y+3]]//down right
+        const diagDL= [[X,Y],[X+1,Y-1],[X+2,Y-2],[X+3,Y-3]]//down left
+
+        if(F(horiz)||F(vert)||F(diagDR)||F(diagDL)) return true
+      }
+    }
+  }
+}
+class Player{
+  constructor(color) {
+    this.color = color
+  }
+}
+document.getElementById('startGame').addEventListener('click',()=>
+  new Game(new Player(document.getElementById('p1Color').value),new Player(document.getElementById('p2Color').value))
+)
+</script>
+
+</body>
+</html>
